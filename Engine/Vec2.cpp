@@ -94,3 +94,68 @@ Vec2 Vec2::GetNormalizedTo(float normalizer) const
 	}
 	return *this;
 }
+
+float Vec2::GetAngle(const float relativeToWhat) const
+{
+	//RelativeToWhat must be between 0 and 2*PI
+	//The return value can be between -PI and +PI
+	const float PI = 3.1415926f;
+	Vec2 a = this->GetNormalized();
+	Vec2 r(float(cos(relativeToWhat)), float(sin(relativeToWhat)));
+
+	//Finding the angle relative to 0
+	float absAngle = 0.0f;
+	if (relativeToWhat <= PI)
+	{
+		absAngle = GetAngleBetween(a, Vec2(1.0f, 0.0f));
+		if (a.y < 0)
+		{
+			absAngle = 2 * PI - absAngle;
+		}
+	}
+	else
+	{
+		absAngle = GetAngleBetween(a, Vec2(1.0f, 0.0f));
+		if (a.y < 0)
+		{
+			absAngle = 2 * PI - absAngle;
+		}
+		else
+		{
+			absAngle += 2 * PI;
+		}
+	}
+
+	if (absAngle >= relativeToWhat && absAngle <= relativeToWhat + PI)
+	{
+		return GetAngleBetween(a, r);
+	}
+	else
+	{
+		return -GetAngleBetween(a, r);
+	}
+}
+
+float Vec2::GetAngle() const
+{
+	if (this->y < 0)
+	{
+		return 6.2831853f - acos(this->GetNormalized().x);
+	}
+
+	return acos(this->GetNormalized().x);
+}
+
+float Vec2::GetAngleBetween(const Vec2 a, const Vec2 b)
+{
+	//It will be between 0 and PI and never negative
+	//acos((this->x * b.x + this->y * b.y) / (this->GetLength() * b.GetLength()));
+	//Dot product
+	float dp = a.x * b.x + a.y * b.y;
+	float u = a.GetLength();
+	float v = b.GetLength();
+
+	float beta = dp / (u * v);
+
+	return acos(beta);
+}
