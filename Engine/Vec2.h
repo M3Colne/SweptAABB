@@ -72,19 +72,6 @@ public:
 		}
 		return *this;
 	}
-	Vec2_& NormalizeTo(T normalizer)
-	{
-		return *this = GetNormalizedTo(normalizer);
-	}
-	Vec2_ GetNormalizedTo(T normalizer) const
-	{
-		const T len = GetLength();
-		if (len != T(0))
-		{
-			return *this * (normalizer / len);
-		}
-		return *this;
-	}
 	float GetAngle(const float relativeToWhat) const
 	{
 		//RelativeToWhat must be between 0 and 2*PI
@@ -146,6 +133,23 @@ public:
 		T beta = dp / (u * v);
 
 		return acos(beta);
+	}
+	Vec2_ Rotate(float dTheta)
+	{
+		return *this = GetRotated(dTheta);
+	}
+	Vec2_ GetRotated(float dTheta) const
+	{
+		const float theta = GetAngle();
+		return Vec2_(cos(theta + dTheta), sin(theta + dTheta)) * GetLength();
+	}
+	static float DotProduct(const Vec2_& a, const Vec2_& b)
+	{
+		return a.x * b.x + a.y * b.y;
+	}   
+	Vec2_ GetNormalCounterClockwise() const
+	{
+		return { -y, x };
 	}
 public:
 	T x;
