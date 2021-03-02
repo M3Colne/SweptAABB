@@ -44,9 +44,9 @@ struct Block
 class Game
 {
 public:
-	Game( class MainWindow& wnd );
-	Game( const Game& ) = delete;
-	Game& operator=( const Game& ) = delete;
+	Game(class MainWindow& wnd);
+	Game(const Game&) = delete;
+	Game& operator=(const Game&) = delete;
 	void Go();
 private:
 	void ComposeFrame();
@@ -79,14 +79,86 @@ private:
 		}
 
 		//Jumping
-		if (!(blocks[GetPlayerBlockId() + int(blockLength * playerHeight / blockSide)].color == Colors::Black))
-		{
-			grounded = true;
-		}
+		const size_t blockUnderPlayerId = GetPlayerBlockId() + int(blockLength * playerHeight / blockSide);
+		if (blockUnderPlayerId < blockSize)
+			if (!(blocks[blockUnderPlayerId].color == Colors::Black))
+			{
+				grounded = true;
+			}
 		if (wnd.kbd.KeyIsPressed('W') && grounded)
 		{
 			playerVel.y = -playerJumpImpulse;
 			grounded = false;
+		}
+	}
+	float SweptAABB(const Block& block1, const Block& block2, const Vec2& vel, Vec2& normal) const
+	{
+		//Get the distances
+		Vec2 entryDist(block2.leftTop.x - block1.bottomRight.x, block2.leftTop.y - block1.bottomRight.y);
+		Vec2 exitDist(block1.bottomRight.x - block1.leftTop.x, block2.bottomRight.y - block1.leftTop.y);
+		if (vel.x < 0.0f)
+		{
+			std::swap<float>(entryDist.x, exitDist.x);
+		}
+		if (vel.y < 0.0f)
+		{
+			std::swap<float>(entryDist.y, exitDist.y);
+		}
+
+		//Get the times
+		Vec2 entryTimeV(entryDist.x / vel.x, entryDist.y / vel.y);
+		Vec2 exitTimeV(exitDist.x / vel.x, exitDist.y / vel.y);
+		if (vel.x == 0.0f)
+		{
+			entryTimeV.x = -std::numeric_limits<float>::infinity();
+			exitTimeV.x = std::numeric_limits<float>::infinity();
+		}
+		if (vel.y == 0.0f)
+		{
+			entryTimeV.y = -std::numeric_limits<float>::infinity();
+			exitTimeV.y = std::numeric_limits<float>::infinity();
+		}
+
+		//Getting the entry and exit time points
+		const float entryTime = std::max<float>(entryTimeV.x, entryTimeV.y);
+		const float exitTime = std::max<float>(exitTimeV.x, exitTimeV.y);
+
+		//Collision test
+		if (entryTime > exitTime || entryTimeV.x < 0.0f && entryTimeV.y < 0.0f || entryTimeV.x > 1.0f || entryTimeV.y > 1.0f)
+		{
+			normal.x = 0.0f;
+			normal.y = 0.0f;
+			return 1.0f;
+		}
+		else
+		{
+			if (entryTimeV.x > entryTimeV.y)
+			{
+				if (entryDist.x < 0.0f)
+				{
+					normal.x = 1.0f;
+					normal.y = 0.0f;
+				}
+				else
+				{
+					normal.x = -1.0f;
+					normal.y = 0.0f;
+				}
+			}
+			else
+			{
+				if (entryDist.y < 0.0f)
+				{
+					normal.x = 0.0f;
+					normal.y = 1.0f;
+				}
+				else
+				{
+					normal.x = 0.0f;
+					normal.y = -1.0f;
+				}
+			}
+			return entryTime; 
 		}
 	}
 	void Physics(const float DT)
@@ -97,11 +169,75 @@ private:
 			playerVel.y += gravityAcc * DT;//External forces(Ex: Gravity)
 		}
 
-		//Integration
-		playerPos += playerVel * DT;
+		//Collision detection
+		Vec2 minNormal(0.0f, 0.0f);
+		float minCollisionTime = 1.0f;
+		if (playerVel.x != 0.0f && playerVel.y != 0.0f)
+		{
+			//Broadphashing
+			//Get each block in the world that is in the broadphase in this vector
+			std::vector<Block*> collidableBlocks;
+			Vec2 bpLeftTop(playerPos);
+			Vec2 bpBottomRight(playerPos);
 
-		//Collisions
-		//---
+			if (playerVel.x > 0.0f)
+			{
+				bpBottomRight.x += playerVel.x;
+			}
+			else
+			{
+				bpLeftTop.x += playerVel.x;
+			}
+
+			if (playerVel.y > 0.0f)
+			{
+				bpBottomRight.y += playerVel.y;
+			}
+			else
+			{
+				bpLeftTop.y += playerVel.y;
+			}
+
+			for (size_t j = 0; j < blockLength; j++)
+			{
+				for (size_t i = 0; i < blockLength; i++)
+				{
+					const size_t id = j * blockLength + i;
+					if (bpBottomRight.x > blocks[id].leftTop.x &&
+						bpLeftTop.x < blocks[id].bottomRight.x &&
+						bpBottomRight.y > blocks[id].leftTop.y &&
+						bpLeftTop.y < blocks[id].bottomRight.y)
+					{
+						collidableBlocks.push_back(&blocks[id]);
+					}
+				}
+			}
+
+			for (auto block : collidableBlocks)
+			{
+				Vec2 normal(0.0f, 0.0f);
+				const float collisionTime = SweptAABB(Block(playerPos, playerPos + Vec2(playerWidth, playerHeight),
+					Colors::White), *block, playerVel, normal);
+
+				if (collisionTime < minCollisionTime)
+				{
+					minCollisionTime = collisionTime;
+					minNormal = normal;
+				}
+			}
+		}
+
+		//Integration(yes, integrate after collision detection and then after this we might integrate again i collision response if
+		//a collision happend)
+		playerPos += playerVel * minCollisionTime * DT;
+
+		//Collision response
+		if (minCollisionTime < 1.0f)
+		{
+			const float remainingTime = 1.0f - minCollisionTime;
+			playerVel = minNormal * Vec2::DotProduct(playerVel, minNormal);
+			playerPos += playerVel * remainingTime * DT;
+		}
 	}
 	/********************************/
 private:
@@ -113,7 +249,8 @@ private:
 	FrameTimer ft;
 	static constexpr unsigned int blockSide = 10;
 	static constexpr unsigned int blockLength = Graphics::ScreenWidth / blockSide;
-	Block blocks[blockLength * blockLength];
+	static constexpr unsigned int blockSize = blockLength * blockLength;
+	Block blocks[blockSize];
 	static constexpr float gravityAcc = blockSide*10.0f;
 
 	//Player
