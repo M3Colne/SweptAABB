@@ -51,6 +51,12 @@ public:
 		dword = color.dword;
 		return *this;
 	}
+	bool operator==(const Color& color) const
+	{
+		return GetR() == color.GetR() &&
+			GetG() == color.GetG() &&
+			GetB() == color.GetB();
+	}
 	constexpr unsigned char GetX() const
 	{
 		return dword >> 24u;

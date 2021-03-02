@@ -24,8 +24,24 @@
 Game::Game( MainWindow& wnd )
 	:
 	wnd( wnd ),
-	gfx( wnd )
+	gfx( wnd ),
+	playerPos(Graphics::ScreenWidth/2.0f, Graphics::ScreenHeight/2.0f),
+	playerVel(0.0f, 0.0f)
 {
+	//Creating the borders
+	for (size_t j = 0; j < blockLength; j++)
+	{
+		for (size_t i = 0; i < blockLength; i++)
+		{
+			const int id = blockLength * j + i;
+			if (i == 0 || i == blockLength - 1 || j == 0 || j == blockLength - 1)
+			{
+				blocks[id].color = Color(255, 204, 153);
+			}
+			blocks[id].leftTop = Vec2(float(i * blockSide), float(j * blockSide));
+			blocks[id].bottomRight = Vec2(float((i+1) * blockSide), float((j+1) * blockSide));
+		}
+	}
 }
 
 void Game::Go()
@@ -38,8 +54,76 @@ void Game::Go()
 
 void Game::UpdateModel()
 {
+	//Getting the delta time
+	const float DT = ft.Mark();
+
+	//World update
+	if (wnd.mouse.LeftIsPressed())
+	{
+		const size_t id = GetBlockId(wnd.mouse.GetPos() / blockSide);
+
+		if (blocks[id].color == Colors::Black)
+		{
+			blocks[id].color = Color(255, 204, 153);
+		}
+	}
+	if (wnd.mouse.RightIsPressed())
+	{
+		const size_t id = GetBlockId(wnd.mouse.GetPos() / blockSide);
+
+		if (blocks[id].color == Color(255, 204, 153))
+		{
+			blocks[id].color = Colors::Black;
+		}
+	}
+
+	//Player update
+	Controls(DT);
+	Physics(DT);
+}
+
+void Game::DrawRect(Vec2 a, Vec2 b, const Color& col)
+{
+	if (a.x > b.x)
+	{
+		std::swap(a.x, b.x);
+	}
+	if (a.y > b.y)
+	{
+		std::swap(a.y, b.y);
+	}
+
+	for (int j = int(a.y); j < int(b.y); j++)
+	{
+		for (int i = int(a.x); i < int(b.x); i++)
+		{
+			gfx.PutPixel(i, j, col);
+		}
+	}
+}
+
+Vei2 Game::GetPlayerBlockPos() const
+{
+	return GetBlockPos(GetPlayerBlockId());
+}
+
+size_t Game::GetPlayerBlockId() const
+{
+	return GetBlockId(Vei2(int(playerPos.x/blockSide), int(playerPos.y / blockSide)));
 }
 
 void Game::ComposeFrame()
 {
+	//Drawing the world
+	for (size_t j = 0; j < blockLength; j++)
+	{
+		for (size_t i = 0; i < blockLength; i++)
+		{
+			const size_t id = j * blockLength + i;
+			DrawRect(blocks[id].leftTop, blocks[id].bottomRight, blocks[id].color);
+		}
+	}
+
+	//Drawing the player
+	DrawRect(playerPos, playerPos + Vec2(playerWidth, playerHeight), Colors::Magenta);
 }
