@@ -176,10 +176,9 @@ private:
 		//Collision detection
 		Vec2 minNormal(0.0f, 0.0f);
 		float minCollisionTime = 1.0f;
+		const Vec2 playerVelFrame = playerVel * DT; //This is the velocity that we are working with, not the playerVel!
 		if (playerVel.x || playerVel.y) //This is testing if the player is even moving at all, if not then we don't do any physics
 		{
-			const Vec2 playerVelFrame = playerVel * DT; //This is the velocity that we are working with, not the playerVel!
-
 			//Broadphashing
 			Vec2 bpLeftTop(playerPos);
 			Vec2 bpBottomRight(playerPos);
@@ -232,11 +231,15 @@ private:
 				}
 			}
 
+			std::string msg = std::to_string(collidableBlocks.size());
+			msg += "\n";
+			OutputDebugStringA(msg.c_str());
+
 			for (auto block : collidableBlocks)
 			{
 				Vec2 normal(0.0f, 0.0f);
 				const float collisionTime = SweptAABB(Block(playerPos, playerPos + Vec2(playerWidth, playerHeight),
-					Colors::White), *block, playerVel * DT, normal);
+					Colors::White), *block, playerVelFrame, normal);
 
 				if (collisionTime < minCollisionTime)
 				{
@@ -248,7 +251,7 @@ private:
 
 		//Integration(yes, integrate after collision detection and then after this we might integrate again i collision response if
 		//a collision happend)
-		playerPos += playerVel * minCollisionTime * DT;
+		playerPos += playerVelFrame * minCollisionTime;
 
 		//Collision response
 		if (minCollisionTime < 1.0f)

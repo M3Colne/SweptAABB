@@ -141,8 +141,6 @@ void Game::ComposeFrame()
 	DrawRect(playerPos, playerPos + Vec2(playerWidth, playerHeight), Colors::Magenta, false);
 
 	//Debugging
-	gfx.DrawLine(playerPos, playerPos + playerVel, Colors::Red);
-
 	Vec2 bpLeftTop(playerPos);
 	Vec2 bpBottomRight(playerPos);
 
@@ -174,4 +172,5 @@ void Game::ComposeFrame()
 		bpBottomRight.y += playerHeight;
 	}
 	DrawRect(bpLeftTop, bpBottomRight, Colors::Blue, true);
+	gfx.DrawLine(bpLeftTop, bpBottomRight, Colors::Red);
 }
