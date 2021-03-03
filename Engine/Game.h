@@ -85,6 +85,10 @@ private:
 			{
 				grounded = true;
 			}
+			else
+			{
+				grounded = false;
+			}
 		if (wnd.kbd.KeyIsPressed('W') && grounded)
 		{
 			playerVel.y = -playerJumpImpulse;
@@ -249,9 +253,10 @@ private:
 		//Collision response
 		if (minCollisionTime < 1.0f)
 		{
-			const float remainingTime = 1.0f - minCollisionTime;
+			playerVel *= 0.0f;
+			/*const float remainingTime = 1.0f - minCollisionTime;
 			playerVel = minNormal * Vec2::DotProduct(playerVel, minNormal);
-			playerPos += playerVel * remainingTime * DT;
+			playerPos += playerVel * remainingTime * DT;*/
 		}
 	}
 	/********************************/

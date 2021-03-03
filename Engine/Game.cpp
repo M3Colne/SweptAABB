@@ -142,4 +142,36 @@ void Game::ComposeFrame()
 
 	//Debugging
 	gfx.DrawLine(playerPos, playerPos + playerVel, Colors::Red);
+
+	Vec2 bpLeftTop(playerPos);
+	Vec2 bpBottomRight(playerPos);
+
+	if (playerVel.x > 0.0f)
+	{
+		bpBottomRight.x += playerWidth + playerVel.x;
+	}
+	if (playerVel.x < 0.0f)
+	{
+		bpLeftTop.x += playerVel.x;
+		bpBottomRight.x += playerWidth;
+	}
+	if (playerVel.x == 0.0f)
+	{
+		bpBottomRight.x += playerWidth;
+	}
+
+	if (playerVel.y > 0.0f)
+	{
+		bpBottomRight.y += playerHeight + playerVel.y;
+	}
+	if (playerVel.y < 0.0f)
+	{
+		bpLeftTop.y += playerVel.y;
+		bpBottomRight.y += playerHeight;
+	}
+	if (playerVel.y == 0.0f)
+	{
+		bpBottomRight.y += playerHeight;
+	}
+	DrawRect(bpLeftTop, bpBottomRight, Colors::Blue, true);
 }
