@@ -121,10 +121,10 @@ private:
 
 		//Getting the entry and exit time points
 		const float entryTime = std::max<float>(entryTimeV.x, entryTimeV.y);
-		const float exitTime = std::max<float>(exitTimeV.x, exitTimeV.y);
+		const float exitTime = std::min<float>(exitTimeV.x, exitTimeV.y);
 
 		//Collision test
-		if (entryTime > exitTime || entryTimeV.x < 0.0f && entryTimeV.y < 0.0f || entryTimeV.x > 1.0f || entryTimeV.y > 1.0f)
+		if (entryTime > exitTime || (entryTimeV.x < 0.0f && entryTimeV.y < 0.0f) || entryTimeV.x > 1.0f || entryTimeV.y > 1.0f)
 		{
 			normal.x = 0.0f;
 			normal.y = 0.0f;
@@ -172,32 +172,44 @@ private:
 		//Collision detection
 		Vec2 minNormal(0.0f, 0.0f);
 		float minCollisionTime = 1.0f;
-		if (playerVel.x != 0.0f && playerVel.y != 0.0f)
+		if (playerVel.x || playerVel.y) //This is testing if the player is even moving at all, if not then we don't do any physics
 		{
+			const Vec2 playerVelFrame = playerVel * DT; //This is the velocity that we are working with, not the playerVel!
+
 			//Broadphashing
-			//Get each block in the world that is in the broadphase in this vector
-			std::vector<Block*> collidableBlocks;
 			Vec2 bpLeftTop(playerPos);
 			Vec2 bpBottomRight(playerPos);
 
-			if (playerVel.x > 0.0f)
+			if (playerVelFrame.x > 0.0f)
 			{
-				bpBottomRight.x += playerVel.x;
+				bpBottomRight.x += playerWidth + playerVelFrame.x;
 			}
-			else
+			if (playerVelFrame.x < 0.0f)
 			{
-				bpLeftTop.x += playerVel.x;
+				bpLeftTop.x += playerVelFrame.x;
+				bpBottomRight.x += playerWidth;
 			}
-
-			if (playerVel.y > 0.0f)
+			if (playerVelFrame.x == 0.0f)
 			{
-				bpBottomRight.y += playerVel.y;
-			}
-			else
-			{
-				bpLeftTop.y += playerVel.y;
+				bpBottomRight.x += playerWidth;
 			}
 
+			if (playerVelFrame.y > 0.0f)
+			{
+				bpBottomRight.y += playerHeight + playerVelFrame.y;
+			}
+			if (playerVelFrame.y < 0.0f)
+			{
+				bpLeftTop.y += playerVelFrame.y;
+				bpBottomRight.y += playerHeight;
+			}
+			if (playerVelFrame.y == 0.0f)
+			{
+				bpBottomRight.y += playerHeight;
+			}
+
+			//Get each block in the world that is in the broadphase in this vector
+			std::vector<Block*> collidableBlocks;
 			for (size_t j = 0; j < blockLength; j++)
 			{
 				for (size_t i = 0; i < blockLength; i++)
