@@ -53,7 +53,7 @@ private:
 	void UpdateModel();
 	/********************************/
 	/*  User Functions              */
-	void DrawRect(Vec2 a, Vec2 b, const Color& col);
+	void DrawRect(Vec2 a, Vec2 b, const Color& col, bool outline);
 	Vei2 GetBlockPos(size_t id) const
 	{
 		const auto y = id % blockLength;
@@ -71,11 +71,11 @@ private:
 		//Side moving
 		if (wnd.kbd.KeyIsPressed('A'))
 		{
-			playerPos.x -= playerXspeed * DT;
+			playerVel.x -= playerXspeed * DT;
 		}
 		if (wnd.kbd.KeyIsPressed('D'))
 		{
-			playerPos.x += playerXspeed * DT;
+			playerVel.x += playerXspeed * DT;
 		}
 
 		//Jumping
@@ -203,12 +203,15 @@ private:
 				for (size_t i = 0; i < blockLength; i++)
 				{
 					const size_t id = j * blockLength + i;
-					if (bpBottomRight.x > blocks[id].leftTop.x &&
-						bpLeftTop.x < blocks[id].bottomRight.x &&
-						bpBottomRight.y > blocks[id].leftTop.y &&
-						bpLeftTop.y < blocks[id].bottomRight.y)
+					if (!(blocks[id].color == Colors::Black))
 					{
-						collidableBlocks.push_back(&blocks[id]);
+						if (bpBottomRight.x > blocks[id].leftTop.x &&
+							bpLeftTop.x < blocks[id].bottomRight.x &&
+							bpBottomRight.y > blocks[id].leftTop.y &&
+							bpLeftTop.y < blocks[id].bottomRight.y)
+						{
+							collidableBlocks.push_back(&blocks[id]);
+						}
 					}
 				}
 			}
@@ -217,7 +220,7 @@ private:
 			{
 				Vec2 normal(0.0f, 0.0f);
 				const float collisionTime = SweptAABB(Block(playerPos, playerPos + Vec2(playerWidth, playerHeight),
-					Colors::White), *block, playerVel, normal);
+					Colors::White), *block, playerVel * DT, normal);
 
 				if (collisionTime < minCollisionTime)
 				{
@@ -251,7 +254,7 @@ private:
 	static constexpr unsigned int blockLength = Graphics::ScreenWidth / blockSide;
 	static constexpr unsigned int blockSize = blockLength * blockLength;
 	Block blocks[blockSize];
-	static constexpr float gravityAcc = blockSide*10.0f;
+	static constexpr float gravityAcc = blockSide*2.0f;
 
 	//Player
 	Vec2 playerPos;

@@ -82,7 +82,7 @@ void Game::UpdateModel()
 	Physics(DT);
 }
 
-void Game::DrawRect(Vec2 a, Vec2 b, const Color& col)
+void Game::DrawRect(Vec2 a, Vec2 b, const Color& col, bool outline)
 {
 	if (a.x > b.x)
 	{
@@ -93,11 +93,24 @@ void Game::DrawRect(Vec2 a, Vec2 b, const Color& col)
 		std::swap(a.y, b.y);
 	}
 
-	for (int j = int(a.y); j < int(b.y); j++)
+	if (outline)
 	{
-		for (int i = int(a.x); i < int(b.x); i++)
+		gfx.DrawLine(Vec2(a.x, a.y), Vec2(b.x - 1.0f, a.y - 1.0f), col);
+		gfx.DrawLine(Vec2(a.x, b.y), Vec2(b.x - 1.0f, b.y - 1.0f), col);
+		gfx.DrawLine(Vec2(a.x, a.y), Vec2(a.x-1.0f, b.y-1.0f), col);
+		gfx.DrawLine(Vec2(b.x, a.y), Vec2(b.x-1.0f, b.y-1.0f), col);
+	}
+	else
+	{
+		for (int j = int(a.y); j < int(b.y); j++)
 		{
-			gfx.PutPixel(i, j, col);
+			for (int i = int(a.x); i < int(b.x); i++)
+			{
+				if (i >= 0 && i < Graphics::ScreenWidth && j >= 0 && j < Graphics::ScreenHeight)
+				{
+					gfx.PutPixel(i, j, col);
+				}
+			}
 		}
 	}
 }
@@ -120,10 +133,13 @@ void Game::ComposeFrame()
 		for (size_t i = 0; i < blockLength; i++)
 		{
 			const size_t id = j * blockLength + i;
-			DrawRect(blocks[id].leftTop, blocks[id].bottomRight, blocks[id].color);
+			DrawRect(blocks[id].leftTop, blocks[id].bottomRight, blocks[id].color, false);
 		}
 	}
 
 	//Drawing the player
-	DrawRect(playerPos, playerPos + Vec2(playerWidth, playerHeight), Colors::Magenta);
+	DrawRect(playerPos, playerPos + Vec2(playerWidth, playerHeight), Colors::Magenta, false);
+
+	//Debugging
+	gfx.DrawLine(playerPos, playerPos + playerVel, Colors::Red);
 }
