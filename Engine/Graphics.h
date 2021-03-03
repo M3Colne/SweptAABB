@@ -77,7 +77,10 @@ public:
 			for (int x = (int)p0.x; x < (int)p1.x; x++)
 			{
 				const float y = m * (float)x + b;
-				PutPixel(x, (int)y, c);
+				if (x >= 0 && x < ScreenWidth && y >= 0 && y < ScreenHeight)
+				{
+					PutPixel(x, (int)y, c);
+				}
 			}
 		}
 		else
@@ -93,7 +96,10 @@ public:
 			for (int y = (int)p0.y; y < (int)p1.y; y++)
 			{
 				const float x = w * (float)y + p;
-				PutPixel((int)x, y, c);
+				if (x >= 0 && x < ScreenWidth && y >= 0 && y < ScreenHeight)
+				{
+					PutPixel((int)x, y, c);
+				}
 			}
 		}
 	}
