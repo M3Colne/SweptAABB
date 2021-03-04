@@ -95,7 +95,7 @@ private:
 			grounded = false;
 		}
 	}
-	float SweptAABB(const Block& block1, const Block& block2, const Vec2& vel, Vec2& normal) const
+	float SweptAABB(const Block& block1, const Block& block2, const Vec2& vel, Vei2& normal) const
 	{
 		//Get the distances
 		Vec2 entryDist(block2.leftTop.x - block1.bottomRight.x, block2.leftTop.y - block1.bottomRight.y);
@@ -110,17 +110,27 @@ private:
 		}
 
 		//Get the times
-		Vec2 entryTimeV(entryDist.x / vel.x, entryDist.y / vel.y);
-		Vec2 exitTimeV(exitDist.x / vel.x, exitDist.y / vel.y);
+		Vec2 entryTimeV(0.0f, 0.0f);
+		Vec2 exitTimeV(0.0f, 0.0f);
 		if (vel.x == 0.0f)
 		{
 			entryTimeV.x = -std::numeric_limits<float>::infinity();
 			exitTimeV.x = std::numeric_limits<float>::infinity();
 		}
+		else
+		{
+			entryTimeV.x = entryDist.x / vel.x;
+			exitTimeV.x = exitDist.x / vel.x;
+		}
 		if (vel.y == 0.0f)
 		{
 			entryTimeV.y = -std::numeric_limits<float>::infinity();
 			exitTimeV.y = std::numeric_limits<float>::infinity();
+		}
+		else
+		{
+			entryTimeV.y = entryDist.y / vel.y;
+			exitTimeV.y = exitDist.y / vel.y;
 		}
 
 		//Getting the entry and exit time points
@@ -130,36 +140,36 @@ private:
 		//Collision test
 		if (entryTime > exitTime || (entryTimeV.x < 0.0f && entryTimeV.y < 0.0f) || entryTimeV.x > 1.0f || entryTimeV.y > 1.0f)
 		{
-			normal.x = 0.0f;
-			normal.y = 0.0f;
+			normal.x = 0;
+			normal.y = 0;
 			return 1.0f;
 		}
 		else
 		{
 			if (entryTimeV.x >= entryTimeV.y)
 			{
-				if (entryDist.x < 0.0f)
+				if (entryDist.x < 0)
 				{
-					normal.x = 1.0f;
-					normal.y = 0.0f;
+					normal.x = 1;
+					normal.y = 0;
 				}
 				else
 				{
-					normal.x = -1.0f;
-					normal.y = 0.0f;
+					normal.x = -1;
+					normal.y = 0;
 				}
 			}
 			else
 			{
-				if (entryDist.y < 0.0f)
+				if (entryDist.y < 0)
 				{
-					normal.x = 0.0f;
-					normal.y = 1.0f;
+					normal.x = 0;
+					normal.y = 1;
 				}
 				else
 				{
-					normal.x = 0.0f;
-					normal.y = -1.0f;
+					normal.x = 0;
+					normal.y = -1;
 				}
 			}
 			return entryTime; 
@@ -174,7 +184,7 @@ private:
 		}
 
 		//Collision detection
-		Vec2 minNormal(0.0f, 0.0f);
+		Vei2 minNormal(0, 0);
 		float minCollisionTime = 1.0f;
 		const Vec2 playerVelFrame = playerVel * DT; //This is the velocity that we are working with, not the playerVel!
 		if (playerVel.x || playerVel.y) //This is testing if the player is even moving at all, if not then we don't do any physics
@@ -222,7 +232,7 @@ private:
 
 			for (auto block : collidableBlocks)
 			{
-				Vec2 normal(0.0f, 0.0f);
+				Vei2 normal(0, 0);
 				const float collisionTime = SweptAABB(Block(playerPos, playerPos + Vec2(playerWidth, playerHeight),
 					Colors::Black), *block, playerVelFrame, normal);
 
