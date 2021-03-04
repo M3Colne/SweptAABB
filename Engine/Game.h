@@ -181,34 +181,23 @@ private:
 		{
 			//Broadphashing
 			Vec2 bpLeftTop(playerPos);
-			Vec2 bpBottomRight(playerPos);
+			Vec2 bpBottomRight(playerPos.x + playerWidth, playerPos.y + playerHeight);
 
 			if (playerVelFrame.x > 0.0f)
 			{
-				bpBottomRight.x += playerWidth + playerVelFrame.x;
+				bpBottomRight.x += playerVelFrame.x;
 			}
 			if (playerVelFrame.x < 0.0f)
 			{
 				bpLeftTop.x += playerVelFrame.x;
-				bpBottomRight.x += playerWidth;
 			}
-			if (playerVelFrame.x == 0.0f)
-			{
-				bpBottomRight.x += playerWidth;
-			}
-
 			if (playerVelFrame.y > 0.0f)
 			{
-				bpBottomRight.y += playerHeight + playerVelFrame.y;
+				bpBottomRight.y += playerVelFrame.y;
 			}
 			if (playerVelFrame.y < 0.0f)
 			{
 				bpLeftTop.y += playerVelFrame.y;
-				bpBottomRight.y += playerHeight;
-			}
-			if (playerVelFrame.y == 0.0f)
-			{
-				bpBottomRight.y += playerHeight;
 			}
 
 			//Get each block in the world that is in the broadphase in this vector
