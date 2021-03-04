@@ -99,7 +99,7 @@ private:
 	{
 		//Get the distances
 		Vec2 entryDist(block2.leftTop.x - block1.bottomRight.x, block2.leftTop.y - block1.bottomRight.y);
-		Vec2 exitDist(block1.bottomRight.x - block1.leftTop.x, block2.bottomRight.y - block1.leftTop.y);
+		Vec2 exitDist(block2.bottomRight.x - block1.leftTop.x, block2.bottomRight.y - block1.leftTop.y);
 		if (vel.x < 0.0f)
 		{
 			std::swap<float>(entryDist.x, exitDist.x);
@@ -231,15 +231,11 @@ private:
 				}
 			}
 
-			std::string msg = std::to_string(collidableBlocks.size());
-			msg += "\n";
-			OutputDebugStringA(msg.c_str());
-
 			for (auto block : collidableBlocks)
 			{
 				Vec2 normal(0.0f, 0.0f);
 				const float collisionTime = SweptAABB(Block(playerPos, playerPos + Vec2(playerWidth, playerHeight),
-					Colors::White), *block, playerVelFrame, normal);
+					Colors::Black), *block, playerVelFrame, normal);
 
 				if (collisionTime < minCollisionTime)
 				{
