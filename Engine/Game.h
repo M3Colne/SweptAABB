@@ -136,7 +136,7 @@ private:
 		}
 		else
 		{
-			if (entryTimeV.x > entryTimeV.y)
+			if (entryTimeV.x >= entryTimeV.y)
 			{
 				if (entryDist.x < 0.0f)
 				{
