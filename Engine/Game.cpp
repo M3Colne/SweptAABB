@@ -172,5 +172,4 @@ void Game::ComposeFrame()
 		bpBottomRight.y += playerHeight;
 	}
 	DrawRect(bpLeftTop, bpBottomRight, Colors::Blue, true);
-	gfx.DrawLine(bpLeftTop, bpBottomRight, Colors::Red);
 }

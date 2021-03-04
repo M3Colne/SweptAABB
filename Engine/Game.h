@@ -249,13 +249,14 @@ private:
 		//a collision happend)
 		playerPos += playerVelFrame * minCollisionTime;
 
-		//Collision response
+		//Collision response(sliding)
 		if (minCollisionTime < 1.0f)
 		{
-			playerVel *= 0.0f;
-			/*const float remainingTime = 1.0f - minCollisionTime;
-			playerVel = minNormal * Vec2::DotProduct(playerVel, minNormal);
-			playerPos += playerVel * remainingTime * DT;*/
+			const float remainingTime = 1.0f - minCollisionTime;
+			const float notDotP = playerVel.x * minNormal.y + playerVel.y * minNormal.x;
+			playerVel.x = notDotP * minNormal.y;
+			playerVel.y = notDotP * minNormal.x;
+			playerPos += playerVel * remainingTime * DT;
 		}
 	}
 	/********************************/
