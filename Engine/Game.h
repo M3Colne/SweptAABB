@@ -224,7 +224,7 @@ private:
 		float minCollisionTime = 1.0f;
 		std::vector<Block*> collidableBlocks;
 
-		//This is testing if the player is even moving at all, if not then we don't do any physics
+		//This is testing if the player is even moving at all, if not then we don't do any collisionFixing
 		if (playerVel.x || playerVel.y)
 		{
 			const Vec2 playerVelFrame = playerVel * DT; //This is the velocity that we are working with, not the playerVel!
@@ -283,7 +283,6 @@ private:
 			//Think about it, we only have 4 cases, where the player is sliding horizontally and it might encounter a wall on the
 			//left or right side which will go through it or we might sliding vertically and it might encounter a wall on the
 			//top or bottom side which will go through it.
-			//Therefore we don't need to do another level or recursion of this function as we explain again below.
 
 
 
@@ -293,8 +292,6 @@ private:
 			{
 				CollisionFix(playerVel * DT, collidableBlocks, minCollisionTime = 1.0f - minCollisionTime, minNormal);
 				//I reseted the values of minCollisionTime and minNormal because the function expects them to be so
-				//We don't actually need the minCollisionTime and minNormal anymore(I use them to fill the parameters 
-				//so that the function can work)
 				//At this point, the player should be moving against two walls at most
 				//At 3 or 4 walls the velocities cancel each other out so still 2 walls at most
 			}
