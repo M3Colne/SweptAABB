@@ -266,6 +266,7 @@ private:
 				}
 			}
 
+			//Fix the collision(Move the player just at the edge of the block)
 			CollisionFix(playerVelFrame, collidableBlocks, minCollisionTime, minNormal);
 		}
 
