@@ -125,6 +125,14 @@ size_t Game::GetPlayerBlockId() const
 	return GetBlockId(Vei2(int(playerPos.x/blockSide), int(playerPos.y / blockSide)));
 }
 
+bool Game::AABB_CollisionDetection(const Vec2& leftTop0, const Vec2& bottomRight0, const Vec2& leftTop1, const Vec2& bottomRight1) const
+{
+	return leftTop0.x < bottomRight1.x&&
+		bottomRight0.x > leftTop1.x &&
+		leftTop0.y < bottomRight1.y&&
+		bottomRight0.y > leftTop1.y;
+}
+
 void Game::ComposeFrame()
 {
 	//Drawing the world

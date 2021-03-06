@@ -1,5 +1,5 @@
-/****************************************************************************************** 
- *	Chili DirectX Framework Version 16.07.20											  *	
+/******************************************************************************************
+ *	Chili DirectX Framework Version 16.07.20											  *
  *	Game.h																				  *
  *	Copyright 2016 PlanetChili.net <http://www.planetchili.net>							  *
  *																						  *
@@ -77,9 +77,17 @@ private:
 		{
 			playerVel.x += playerXspeed * DT;
 		}
+		if (wnd.kbd.KeyIsPressed('W'))
+		{
+			playerVel.y -= playerXspeed * DT;
+		}
+		if (wnd.kbd.KeyIsPressed('S'))
+		{
+			playerVel.y += playerXspeed * DT;
+		}
 
 		//Jumping
-		const size_t blockUnderPlayerId = GetPlayerBlockId() + int(blockLength * playerHeight / blockSide);
+		/*const size_t blockUnderPlayerId = GetPlayerBlockId() + int(blockLength * playerHeight / blockSide);
 		if (blockUnderPlayerId < blockSize)
 			if (!(blocks[blockUnderPlayerId].color == Colors::Black))
 			{
@@ -93,8 +101,10 @@ private:
 		{
 			playerVel.y = -playerJumpImpulse;
 			grounded = false;
-		}
+		}*/
 	}
+
+	bool AABB_CollisionDetection(const Vec2& leftTop0, const Vec2& bottomRight0, const Vec2& leftTop1, const Vec2& bottomRight1) const;
 	float SweptAABB(const Block& block1, const Block& block2, const Vec2& vel, Vei2& normal) const
 	{
 		//Get the distances
@@ -172,23 +182,53 @@ private:
 					normal.y = -1;
 				}
 			}
-			return entryTime; 
+			return entryTime;
 		}
+	}
+	void CollisionFix(const Vec2& vel, std::vector<Block*>& collidableBlocks, float& collisionTime, Vei2& normal)
+	{
+		//Find the smallest time for a possible collision and remove that block that we collided with
+		size_t collidingBlockId = 0;
+		for (size_t i = 0; i < collidableBlocks.size(); i++)
+		{
+			Vei2 n(0, 0);
+			const float ct = SweptAABB(Block(playerPos, playerPos + Vec2(playerWidth, playerHeight),
+				Colors::Black), *collidableBlocks[i], vel, n);
+
+			if (ct < collisionTime)
+			{
+				collisionTime = ct;
+				normal = n;
+				collidingBlockId = i;
+			}
+		}
+		if (!collidableBlocks.empty())
+		{
+			collidableBlocks.erase(collidableBlocks.begin() + collidingBlockId);
+		}
+
+		//Integration
+		//Actually this is more like a collision fix(we move the player so that it just touches the block)
+		playerPos += vel * collisionTime;
 	}
 	void Physics(const float DT)
 	{
 		//Forces
-		if (!grounded)
-		{
-			playerVel.y += gravityAcc * DT;//External forces(Ex: Gravity)
-		}
+		//if (!grounded)
+		//{
+		//	playerVel.y += gravityAcc * DT;//External forces(Ex: Gravity)
+		//}
 
 		//Collision detection
 		Vei2 minNormal(0, 0);
 		float minCollisionTime = 1.0f;
-		const Vec2 playerVelFrame = playerVel * DT; //This is the velocity that we are working with, not the playerVel!
-		if (playerVel.x || playerVel.y) //This is testing if the player is even moving at all, if not then we don't do any physics
+		std::vector<Block*> collidableBlocks;
+
+		//This is testing if the player is even moving at all, if not then we don't do any physics
+		if (playerVel.x || playerVel.y)
 		{
+			const Vec2 playerVelFrame = playerVel * DT; //This is the velocity that we are working with, not the playerVel!
+
 			//Broadphashing
 			Vec2 bpLeftTop(playerPos);
 			Vec2 bpBottomRight(playerPos.x + playerWidth, playerPos.y + playerHeight);
@@ -211,7 +251,6 @@ private:
 			}
 
 			//Get each block in the world that is in the broadphase in this vector
-			std::vector<Block*> collidableBlocks;
 			for (size_t j = 0; j < blockLength; j++)
 			{
 				for (size_t i = 0; i < blockLength; i++)
@@ -219,10 +258,7 @@ private:
 					const size_t id = j * blockLength + i;
 					if (!(blocks[id].color == Colors::Black))
 					{
-						if (bpBottomRight.x > blocks[id].leftTop.x &&
-							bpLeftTop.x < blocks[id].bottomRight.x &&
-							bpBottomRight.y > blocks[id].leftTop.y &&
-							bpLeftTop.y < blocks[id].bottomRight.y)
+						if (AABB_CollisionDetection(bpLeftTop, bpBottomRight, blocks[id].leftTop, blocks[id].bottomRight))
 						{
 							collidableBlocks.push_back(&blocks[id]);
 						}
@@ -230,32 +266,38 @@ private:
 				}
 			}
 
-			for (auto block : collidableBlocks)
-			{
-				Vei2 normal(0, 0);
-				const float collisionTime = SweptAABB(Block(playerPos, playerPos + Vec2(playerWidth, playerHeight),
-					Colors::Black), *block, playerVelFrame, normal);
-
-				if (collisionTime < minCollisionTime)
-				{
-					minCollisionTime = collisionTime;
-					minNormal = normal;
-				}
-			}
+			CollisionFix(playerVelFrame, collidableBlocks, minCollisionTime, minNormal);
 		}
-
-		//Integration(yes, integrate after collision detection and then after this we might integrate again i collision response if
-		//a collision happend)
-		playerPos += playerVelFrame * minCollisionTime;
 
 		//Collision response(sliding)
 		if (minCollisionTime < 1.0f)
 		{
-			const float remainingTime = 1.0f - minCollisionTime;
 			const float notDotP = playerVel.x * minNormal.y + playerVel.y * minNormal.x;
 			playerVel.x = notDotP * minNormal.y;
 			playerVel.y = notDotP * minNormal.x;
-			playerPos += playerVel * remainingTime * DT;
+
+			//This part of the algorithm should be fixing a problem where the player collision is fixed for only 1 direction
+			//So if you use the simple integration here(playerPos += playerVelFrame * remainingTime) it migth slide against 
+			//another wall and will not test for collision and will move through the walls while sliding into that direction.
+			//This is where we call another CollisionFix() function so it doesn't grow through neither walls
+			//Think about it, we only have 4 cases, where the player is sliding horizontally and it might encounter a wall on the
+			//left or right side which will go through it or we might sliding vertically and it might encounter a wall on the
+			//top or bottom side which will go through it.
+			//Therefore we don't need to do another level or recursion of this function as we explain again below.
+
+
+
+			//At this point the player MUST BE moving horizontally, vertically or not moving at all(because we are sliding)
+			//And if we encounter a wall and fix the collision we will not slide anymore(because we only go in cardinal directions)
+			if (playerVel.x || playerVel.y)
+			{
+				CollisionFix(playerVel * DT, collidableBlocks, minCollisionTime = 1.0f - minCollisionTime, minNormal);
+				//I reseted the values of minCollisionTime and minNormal because the function expects them to be so
+				//We don't actually need the minCollisionTime and minNormal anymore(I use them to fill the parameters 
+				//so that the function can work)
+				//At this point, the player should be moving against two walls at most
+				//At 3 or 4 walls the velocities cancel each other out so still 2 walls at most
+			}
 		}
 	}
 	/********************************/
