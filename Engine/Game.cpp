@@ -301,7 +301,8 @@ void Game::Physics(const float DT)
 	}
 
 	//Collision response(sliding)
-	if (minCollisionTime < 1.0f)
+	float remainingTime = 1.0f - minCollisionTime;
+	if (remainingTime > 0.0f)
 	{
 		const float notDotP = playerVel.x * minNormal.y + playerVel.y * minNormal.x;
 		playerVel.x = notDotP * minNormal.y;
@@ -321,7 +322,7 @@ void Game::Physics(const float DT)
 		//And if we encounter a wall and fix the collision we will not slide anymore(because we only go in cardinal directions)
 		if (playerVel.x || playerVel.y)
 		{
-			CollisionFix(playerVel * DT, collidableBlocks, minCollisionTime = 1.0f - minCollisionTime, minNormal);
+			CollisionFix(playerVel * DT, collidableBlocks, remainingTime, minNormal);
 			//I reseted the values of minCollisionTime and minNormal because the function expects them to be so
 			//At this point, the player should be moving against two walls at most
 			//At 3 or 4 walls the velocities cancel each other out so still 2 walls at most
