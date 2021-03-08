@@ -130,6 +130,5 @@ private:
 	static constexpr float playerXspeed = blockSide * 10.0f;
 	static constexpr float playerJumpImpulse = blockSide * 6.0f;
 	bool grounded = false;
-	bool intersected = false;
 	/********************************/
 };
