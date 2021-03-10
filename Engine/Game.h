@@ -104,9 +104,33 @@ private:
 		}*/
 	}
 
+	std::pair<Vec2, Vec2> GetBroadphaseBox(const Vec2& vel)
+	{
+		Vec2 leftTop(playerPos);
+		Vec2 bottomRight(playerPos.x + playerWidth, playerPos.y + playerHeight);
+
+		if (vel.x > 0.0f)
+		{
+			bottomRight.x += vel.x;
+		}
+		if (vel.x < 0.0f)
+		{
+			leftTop.x += vel.x;
+		}
+		if (vel.y > 0.0f)
+		{
+			bottomRight.y += vel.y;
+		}
+		if (vel.y < 0.0f)
+		{
+			leftTop.y += vel.y;
+		}
+
+		return { leftTop, bottomRight };
+	}
 	bool AABB_CollisionDetection(const Vec2& leftTop0, const Vec2& bottomRight0, const Vec2& leftTop1, const Vec2& bottomRight1) const;
 	float SweptAABB(const Block& block1, const Block& block2, const Vec2& vel, Vei2& normal) const;
-	void CollisionFix(const Vec2& vel, std::vector<Block*>& collidableBlocks, float& collisionTime, Vei2& normal);
+	void CollisionTime(const Vec2& vel, std::vector<Block*>& collidableBlocks, float& collisionTime, Vei2& normal);
 	void Physics(const float DT);
 	/********************************/
 private:

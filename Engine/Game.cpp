@@ -214,7 +214,7 @@ float Game::SweptAABB(const Block& block1, const Block& block2, const Vec2& vel,
 	}
 }
 
-void Game::CollisionFix(const Vec2& vel, std::vector<Block*>& collidableBlocks, float& collisionTime, Vei2& normal)
+void Game::CollisionTime(const Vec2& vel, std::vector<Block*>& collidableBlocks, float& collisionTime, Vei2& normal)
 {
 	//Find the smallest time for a possible collision and remove that block that we collided with
 	size_t collidingBlockId = 0;
@@ -235,10 +235,6 @@ void Game::CollisionFix(const Vec2& vel, std::vector<Block*>& collidableBlocks, 
 	{
 		collidableBlocks.erase(collidableBlocks.begin() + collidingBlockId);
 	}
-
-	//Integration
-	//Actually this is more like a collision fix(we move the player so that it just touches the block)
-	playerPos += vel * collisionTime;
 }
 
 void Game::Physics(const float DT)
@@ -249,61 +245,41 @@ void Game::Physics(const float DT)
 	//	playerVel.y += gravityAcc * DT;//External forces(Ex: Gravity)
 	//}
 
-	//Collision detection
 	Vei2 minNormal(0, 0);
 	float minCollisionTime = 1.0f;
 	std::vector<Block*> collidableBlocks;
 
-	//This is collision detectection, response and integration all in one
+	//Integration(also has collision fixing)
 	if (playerVel.x || playerVel.y)
 	{
 		const Vec2 playerVelFrame = playerVel * DT; //This is the velocity that we are working with, not the playerVel!
 
 		//Broadphashing
-		Vec2 bpLeftTop(playerPos);
-		Vec2 bpBottomRight(playerPos.x + playerWidth, playerPos.y + playerHeight);
+		const auto broadphaseBox = GetBroadphaseBox(playerVelFrame);
 
-		if (playerVelFrame.x > 0.0f)
+		//Broadphase the world in this vector
+		for (auto& i : blocks)
 		{
-			bpBottomRight.x += playerVelFrame.x;
-		}
-		if (playerVelFrame.x < 0.0f)
-		{
-			bpLeftTop.x += playerVelFrame.x;
-		}
-		if (playerVelFrame.y > 0.0f)
-		{
-			bpBottomRight.y += playerVelFrame.y;
-		}
-		if (playerVelFrame.y < 0.0f)
-		{
-			bpLeftTop.y += playerVelFrame.y;
-		}
-
-		//Get each block in the world that is in the broadphase in this vector
-		for (size_t j = 0; j < blockLength; j++)
-		{
-			for (size_t i = 0; i < blockLength; i++)
+			if (!(i.color == Colors::Black))
 			{
-				const size_t id = j * blockLength + i;
-				if (!(blocks[id].color == Colors::Black))
+				if (AABB_CollisionDetection(broadphaseBox.first, broadphaseBox.second, i.leftTop, i.bottomRight))
 				{
-					if (AABB_CollisionDetection(bpLeftTop, bpBottomRight, blocks[id].leftTop, blocks[id].bottomRight))
-					{
-						collidableBlocks.push_back(&blocks[id]);
-					}
+					collidableBlocks.push_back(&i);
 				}
 			}
 		}
 
-		//Fix the collision(Move the player just at the edge of the block)
-		CollisionFix(playerVelFrame, collidableBlocks, minCollisionTime, minNormal);
+		//Integration(with collisionFix if there is a collision the minCollisionTime will be between 0 and 1
+		//else minCollisionTime will be 1.0f)
+		CollisionTime(playerVelFrame, collidableBlocks, minCollisionTime, minNormal);
+		playerPos += playerVelFrame * minCollisionTime;
 	}
 
-	//Collision response(sliding)
+	//Collision response(sliding, if there was a collision)
 	float remainingTime = 1.0f - minCollisionTime;
 	if (remainingTime > 0.0f)
 	{
+		//Change the velocity for sliding
 		if (minNormal.x)
 		{
 			playerVel.x = 0.0f;
@@ -313,59 +289,39 @@ void Game::Physics(const float DT)
 			playerVel.y = 0.0f;
 		}
 
-		//This part of the algorithm should be fixing a problem where the player collision is fixed for only 1 direction
+		//This part of the algorithm solves a problem where the player collision is fixed for only 1 direction but not for others
 		//So if you use the simple integration here(playerPos += playerVelFrame * remainingTime) it migth slide against 
-		//another wall and will not test for collision and will move through the walls while sliding into that direction.
-		//This is where we call another CollisionFix() function so it doesn't grow through neither walls
-		//Think about it, we only have 4 cases, where the player is sliding horizontally and it might encounter a wall on the
-		//left or right side which will go through it or we might sliding vertically and it might encounter a wall on the
-		//top or bottom side which will go through it.
+		//another wall in the direction it's sliding and will not test for collision and will move through the walls while 
+		//sliding into that direction.
 
+		//This is where we call another CollisionFix() function so it doesn't move through neither walls
+		//The player must be moving against two walls at most. Why? Because at 3 or 4 walls the velocities cancel each other out so still 2 walls
+		//This means we only have 4 cases, think about it, where the player is sliding horizontally and it might encounter a wall on the
+		//left or right side or we might sliding vertically and it might encounter a wall on the top or bottom side.
 
-
-		//At this point the player MUST BE moving horizontally, vertically or not moving at all(because we are sliding)
-		//And if we encounter a wall and fix the collision we will not slide anymore(because we only go in cardinal directions)
+		//At this point the player MUST BE moving horizontally, vertically or not moving at all(because we changed the velocity above)
 		if (playerVel.x || playerVel.y)
 		{
-			//Because there is a new velocity we need to compute a new broadphase to filter all the collidable blocks
+			//Because there is a new velocity we need to compute a new broadphase to filter the world block
+			//But because we are sliding we don't have more velocity in any direction, we actually lose a velocity in a direction 
+			//so it is guaranteed that the new broadphase will be smaller than the last one ===> new collidableBlocks <= old collidableBlocks
 			//We don't need to do a broadphasing of the whole world, we just need to broadphase on our old collidable blocks vector
-			//Because by sliding we don't have more velocity in any direction, we actually lose a direction so it is guaranteed
-			//that the new collidable blocks <= old collidable blocks
 
 			const Vec2 playerVelFrame = playerVel * DT;
 
 			//Broadphashing
-			Vec2 bpLeftTop(playerPos);
-			Vec2 bpBottomRight(playerPos.x + playerWidth, playerPos.y + playerHeight);
+			const auto broadphaseBox = GetBroadphaseBox(playerVelFrame);
 
-			if (playerVelFrame.x > 0.0f)
-			{
-				bpBottomRight.x += playerVelFrame.x;
-			}
-			if (playerVelFrame.x < 0.0f)
-			{
-				bpLeftTop.x += playerVelFrame.x;
-			}
-			if (playerVelFrame.y > 0.0f)
-			{
-				bpBottomRight.y += playerVelFrame.y;
-			}
-			if (playerVelFrame.y < 0.0f)
-			{
-				bpLeftTop.y += playerVelFrame.y;
-			}
-
-			//Filter the collidableBlocks vector
+			//Broadphase(fast erasing) the collidableBlocks vector
 			const auto nEnd = std::remove_if(collidableBlocks.begin(), collidableBlocks.end(),
-				[this, &bpLeftTop, &bpBottomRight](const Block* block)
+				[this, &broadphaseBox](const Block* block)
 				{
-					return !AABB_CollisionDetection(bpLeftTop, bpBottomRight, block->leftTop, block->bottomRight);
+					return !AABB_CollisionDetection(broadphaseBox.first, broadphaseBox.second, block->leftTop, block->bottomRight);
 				});
 			collidableBlocks.erase(nEnd, collidableBlocks.end());
 
-			CollisionFix(playerVel * DT, collidableBlocks, remainingTime, minNormal);
-			//At this point, the player should be moving against two walls at most
-			//At 3 or 4 walls the velocities cancel each other out so still 2 walls at most
+			CollisionTime(playerVel * DT, collidableBlocks, remainingTime, minNormal = Vei2(0,0));
+			playerPos += playerVelFrame * remainingTime;
 		}
 	}
 }
