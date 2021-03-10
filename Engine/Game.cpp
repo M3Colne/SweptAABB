@@ -304,9 +304,14 @@ void Game::Physics(const float DT)
 	float remainingTime = 1.0f - minCollisionTime;
 	if (remainingTime > 0.0f)
 	{
-		const float notDotP = playerVel.x * minNormal.y + playerVel.y * minNormal.x;
-		playerVel.x = notDotP * minNormal.y;
-		playerVel.y = notDotP * minNormal.x;
+		if (minNormal.x)
+		{
+			playerVel.x = 0.0f;
+		}
+		if (minNormal.y)
+		{
+			playerVel.y = 0.0f;
+		}
 
 		//This part of the algorithm should be fixing a problem where the player collision is fixed for only 1 direction
 		//So if you use the simple integration here(playerPos += playerVelFrame * remainingTime) it migth slide against 
