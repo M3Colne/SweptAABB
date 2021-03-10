@@ -66,68 +66,9 @@ private:
 	Vei2 GetPlayerBlockPos() const;
 	size_t GetPlayerBlockId() const;
 
-	void Controls(const float DT)
-	{
-		//Side moving
-		if (wnd.kbd.KeyIsPressed('A'))
-		{
-			playerVel.x -= playerXspeed * DT;
-		}
-		if (wnd.kbd.KeyIsPressed('D'))
-		{
-			playerVel.x += playerXspeed * DT;
-		}
-		if (wnd.kbd.KeyIsPressed('W'))
-		{
-			playerVel.y -= playerXspeed * DT;
-		}
-		if (wnd.kbd.KeyIsPressed('S'))
-		{
-			playerVel.y += playerXspeed * DT;
-		}
+	void Controls(const float DT);
 
-		//Jumping
-		/*const size_t blockUnderPlayerId = GetPlayerBlockId() + int(blockLength * playerHeight / blockSide);
-		if (blockUnderPlayerId < blockSize)
-			if (!(blocks[blockUnderPlayerId].color == Colors::Black))
-			{
-				grounded = true;
-			}
-			else
-			{
-				grounded = false;
-			}
-		if (wnd.kbd.KeyIsPressed('W') && grounded)
-		{
-			playerVel.y = -playerJumpImpulse;
-			grounded = false;
-		}*/
-	}
-
-	std::pair<Vec2, Vec2> GetBroadphaseBox(const Vec2& vel)
-	{
-		Vec2 leftTop(playerPos);
-		Vec2 bottomRight(playerPos.x + playerWidth, playerPos.y + playerHeight);
-
-		if (vel.x > 0.0f)
-		{
-			bottomRight.x += vel.x;
-		}
-		if (vel.x < 0.0f)
-		{
-			leftTop.x += vel.x;
-		}
-		if (vel.y > 0.0f)
-		{
-			bottomRight.y += vel.y;
-		}
-		if (vel.y < 0.0f)
-		{
-			leftTop.y += vel.y;
-		}
-
-		return { leftTop, bottomRight };
-	}
+	std::pair<Vec2, Vec2> GetBroadphaseBox(const Vec2& vel) const;
 	bool AABB_CollisionDetection(const Vec2& leftTop0, const Vec2& bottomRight0, const Vec2& leftTop1, const Vec2& bottomRight1) const;
 	float SweptAABB(const Block& block1, const Block& block2, const Vec2& vel, Vei2& normal) const;
 	void CollisionTime(const Vec2& vel, std::vector<Block*>& collidableBlocks, float& collisionTime, Vei2& normal);
@@ -144,7 +85,7 @@ private:
 	static constexpr unsigned int blockLength = Graphics::ScreenWidth / blockSide;
 	static constexpr unsigned int blockSize = blockLength * blockLength;
 	Block blocks[blockSize];
-	static constexpr float gravityAcc = blockSide*2.0f;
+	static constexpr float gravityAcc = blockSide*8.0f;
 
 	//Player
 	Vec2 playerPos;

@@ -125,6 +125,65 @@ size_t Game::GetPlayerBlockId() const
 	return GetBlockId(Vei2(int(playerPos.x/blockSide), int(playerPos.y / blockSide)));
 }
 
+void Game::Controls(const float DT)
+
+{
+	//Side moving
+	if (wnd.kbd.KeyIsPressed('A'))
+	{
+		playerVel.x -= playerXspeed * DT;
+	}
+	if (wnd.kbd.KeyIsPressed('D'))
+	{
+		playerVel.x += playerXspeed * DT;
+	}
+
+	//Jumping
+	const size_t blockUnderPlayerId = GetPlayerBlockId() + int(blockLength * playerHeight / blockSide);
+	if (blockUnderPlayerId < blockSize)
+	{
+		if (!(blocks[blockUnderPlayerId].color == Colors::Black))
+		{
+			grounded = true;
+		}
+		else
+		{
+			grounded = false;
+		}
+	}
+	if (wnd.kbd.KeyIsPressed('W') && grounded)
+	{
+		playerVel.y = -playerJumpImpulse;
+		grounded = false;
+	}
+}
+
+std::pair<Vec2, Vec2> Game::GetBroadphaseBox(const Vec2& vel) const
+
+{
+	Vec2 leftTop(playerPos);
+	Vec2 bottomRight(playerPos.x + playerWidth, playerPos.y + playerHeight);
+
+	if (vel.x > 0.0f)
+	{
+		bottomRight.x += vel.x;
+	}
+	if (vel.x < 0.0f)
+	{
+		leftTop.x += vel.x;
+	}
+	if (vel.y > 0.0f)
+	{
+		bottomRight.y += vel.y;
+	}
+	if (vel.y < 0.0f)
+	{
+		leftTop.y += vel.y;
+	}
+
+	return { leftTop, bottomRight };
+}
+
 bool Game::AABB_CollisionDetection(const Vec2& leftTop0, const Vec2& bottomRight0, const Vec2& leftTop1, const Vec2& bottomRight1) const
 {
 	return leftTop0.x < bottomRight1.x &&
@@ -240,10 +299,10 @@ void Game::CollisionTime(const Vec2& vel, std::vector<Block*>& collidableBlocks,
 void Game::Physics(const float DT)
 {
 	//Forces
-	//if (!grounded)
-	//{
-	//	playerVel.y += gravityAcc * DT;//External forces(Ex: Gravity)
-	//}
+	if (!grounded)
+	{
+		playerVel.y += gravityAcc * DT;//External forces(Ex: Gravity)
+	}
 
 	Vei2 minNormal(0, 0);
 	float minCollisionTime = 1.0f;
@@ -329,13 +388,9 @@ void Game::Physics(const float DT)
 void Game::ComposeFrame()
 {
 	//Drawing the world
-	for (size_t j = 0; j < blockLength; j++)
+	for (auto& i : blocks)
 	{
-		for (size_t i = 0; i < blockLength; i++)
-		{
-			const size_t id = j * blockLength + i;
-			DrawRect(blocks[id].leftTop, blocks[id].bottomRight, blocks[id].color, false);
-		}
+		DrawRect(i.leftTop, i.bottomRight, i.color, false);
 	}
 
 	//Drawing the player
