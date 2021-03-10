@@ -254,7 +254,7 @@ void Game::Physics(const float DT)
 	float minCollisionTime = 1.0f;
 	std::vector<Block*> collidableBlocks;
 
-	//This is testing if the player is even moving at all, if not then we don't do any collisionFixing
+	//This is collision detectection, response and integration all in one
 	if (playerVel.x || playerVel.y)
 	{
 		const Vec2 playerVelFrame = playerVel * DT; //This is the velocity that we are working with, not the playerVel!
@@ -322,8 +322,43 @@ void Game::Physics(const float DT)
 		//And if we encounter a wall and fix the collision we will not slide anymore(because we only go in cardinal directions)
 		if (playerVel.x || playerVel.y)
 		{
+			//Because there is a new velocity we need to compute a new broadphase to filter all the collidable blocks
+			//We don't need to do a broadphasing of the whole world, we just need to broadphase on our old collidable blocks vector
+			//Because by sliding we don't have more velocity in any direction, we actually lose a direction so it is guaranteed
+			//that the new collidable blocks <= old collidable blocks
+
+			const Vec2 playerVelFrame = playerVel * DT;
+
+			//Broadphashing
+			Vec2 bpLeftTop(playerPos);
+			Vec2 bpBottomRight(playerPos.x + playerWidth, playerPos.y + playerHeight);
+
+			if (playerVelFrame.x > 0.0f)
+			{
+				bpBottomRight.x += playerVelFrame.x;
+			}
+			if (playerVelFrame.x < 0.0f)
+			{
+				bpLeftTop.x += playerVelFrame.x;
+			}
+			if (playerVelFrame.y > 0.0f)
+			{
+				bpBottomRight.y += playerVelFrame.y;
+			}
+			if (playerVelFrame.y < 0.0f)
+			{
+				bpLeftTop.y += playerVelFrame.y;
+			}
+
+			//Filter the collidableBlocks vector
+			const auto nEnd = std::remove_if(collidableBlocks.begin(), collidableBlocks.end(),
+				[this, &bpLeftTop, &bpBottomRight](const Block* block)
+				{
+					return !AABB_CollisionDetection(bpLeftTop, bpBottomRight, block->leftTop, block->bottomRight);
+				});
+			collidableBlocks.erase(nEnd, collidableBlocks.end());
+
 			CollisionFix(playerVel * DT, collidableBlocks, remainingTime, minNormal);
-			//I reseted the values of minCollisionTime and minNormal because the function expects them to be so
 			//At this point, the player should be moving against two walls at most
 			//At 3 or 4 walls the velocities cancel each other out so still 2 walls at most
 		}
