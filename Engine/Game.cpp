@@ -18,34 +18,6 @@
  *	You should have received a copy of the GNU General Public License					  *
  *	along with The Chili DirectX Framework.  If not, see <http://www.gnu.org/licenses/>.  *
  ******************************************************************************************/
-
-
-
-
-
-
-
-
-//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-//This should be in the repo description as well in case you missed it
-
-//Sources where I learned about the subject:
-
-//https://www.gamedev.net/tutorials/programming/general-and-gameplay-programming/swept-aabb-collision-detection-and-response-r3084/
-//(Careful, on the site there are some errors made by the authour and this repo is my attempt on trying to fix the bugs in his code and
-//trying to fix problems arising from my own code. There are many unneccesary steps like testing if the player is moving at all( there are
-//just my attempt to optimize).
-
-//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-
-
-
-
-
-
-
 #include "MainWindow.h"
 #include "Game.h"
 
